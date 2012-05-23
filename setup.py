@@ -14,7 +14,7 @@ setup(name='spreedly-core-python',
       author_email='martin@mooball.net',
       url='http://www.mooball.net',
       license='ZPL',
-      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      py_modules = ['spreedlycore'],
       include_package_data=True,
       zip_safe=False,
       install_requires=[

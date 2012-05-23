@@ -1,35 +1,8 @@
-import urllib, urllib2, urlparse, datetime, base64
+# All material is Copyright Mooball IT
+# All code is licensed under the ZPL Licence (see LICENSE.txt)
+
+import urllib2, urlparse, datetime, base64
 from xml.etree import ElementTree
-
-'''
-Examples:
-
-First create an APIConnection with login and secret
-
-api = APIConnection( 'LOGIN', 'SECRET' )
-
-Get the first payment gateway and payment method
-
-pg = api.gateways()[0]
-pm = api.methods()[0]
-
-Raise a transaction using the gateway and payment method.
-
-pg.transaction( pm, 100, 'USD' )
-
-Create a new gateway and payment method and retain the payment method for later.
-
-pg = PaymentGateway.add( 'test' )
-pm = PaymentMethod.add( api, { 'first_name': 'Test', 'last_name': 'Testington', 'number': '5555555555554444', 'verification_value': '666', 'month': '12', 'year': '2012' } )
-pm.retain()
-
-Do another transaction via authorize (allocate funds but dont do transaction) and capture (do the transaction) using the new details.
-
-t = Transaction.authorize( api, pg, pm, 1000, 'AUD' )
-t.capture()
-
-'''
-
 
 convs = {
     'datetime': lambda dt: datetime.datetime.strptime( dt, '%Y-%m-%dT%H:%M:%SZ' ),
@@ -39,10 +12,11 @@ convs = {
 
 def xml_to_dict( xml, handlers = None ):
     '''
-        Converts an etree xml structure to a python dictionary
-        handlers is used to specify functions to handle specific xml tags.
-            The keys in the handlers dictionary map to xml tag names and the values should be functions that takes the xml element and returns a string that will be used as the value in the
-            resulting dictionary.
+    Converts an etree xml structure to a python dictionary
+    handlers is used to specify functions to handle specific xml tags.
+    The keys in the handlers dictionary map to xml tag names and the
+    values should be functions that takes the xml element and returns a
+    string that will be used as the value in the resulting dictionary.
     '''
     handlers = handlers or {}
     
@@ -69,8 +43,10 @@ def dict_to_xml( d, handlers = None ):
     '''
         Converts a python dictionary to etree xml structures
         handlers is used to specify functions to handle specific dictionary keys.
-            The keys in the handlers dictionary map to keys in the dictionary that is being converted. The values of the handlers dictionary should be function that take the xml element and the value of the key value pair
-            and returns an etree xml element (ie. the same one that was passed to the function)
+        The keys in the handlers dictionary map to keys in the dictionary
+        that is being converted. The values of the handlers dictionary
+        should be function that take the xml element and the value of the key value pair
+        and returns an etree xml element (ie. the same one that was passed to the function)
         
     '''
     handlers = handlers or {}
@@ -129,7 +105,8 @@ class APIConnection( object ):
     
     def transactions( self, since = None ):
         ''' Returns a list of 20 transactions.
-            Passing a transaction token in the since parameter will return 20 transactions that occured after the supplied transaction token.
+            Passing a transaction token in the since parameter will return
+            20 transactions that occured after the supplied transaction token.
         '''
         url = 'transactions.xml'
         if since:
@@ -151,12 +128,16 @@ class APIConnection( object ):
     
     def gateway_types( self ):
         '''
-            Returns a list of dictionaries that represent the available payment gateway types and the parameters they require to function.
-            Each gateway type dictionary has a list of modes that correspond to different authentication modes that require a different set of parameters.
-            And each of the modes have a list of fields which are the parameters needed to use the gateway.
-            Appart from name and label each field also has attributes indicating whether the field's data is safe to display as plain text (the safe attribute)
-            and whether a text box is needed to provide data to the it (the long attribute).
-            This data can be used to easily generate forms to collect the correct authentication data for a client's payment gateway of choice.
+        Returns a list of dictionaries that represent the available payment gateway
+        types and the parameters they require to function.
+        Each gateway type dictionary has a list of modes that correspond to
+        different authentication modes that require a different set of parameters.
+        And each of the modes have a list of fields which are the parameters needed to use the gateway.
+        Appart from name and label each field also has attributes indicating
+        whether the field's data is safe to display as plain text (the safe attribute)
+        and whether a text box is needed to provide data to the it (the long attribute).
+        This data can be used to easily generate forms to collect the correct
+        authentication data for a client's payment gateway of choice.
         '''
 
         xml = APIRequest( self, 'gateways.xml', 'OPTIONS' ).xml()
@@ -164,7 +145,6 @@ class APIConnection( object ):
         gws = []
         
         for elem in xml:
-            print elem
             gw = {}
             
             gw['type'] = elem.find( 'gateway_type' ).text
@@ -173,7 +153,6 @@ class APIConnection( object ):
             gw['modes'] = []
             
             for m_elem in elem.find( 'auth_modes' ) or []:
-                print m_elem
                 mode = {}
                 
                 mode['type'] = m_elem.find( 'auth_mode_type' ).text
@@ -182,7 +161,6 @@ class APIConnection( object ):
                 mode['fields'] = []
                 
                 for f_elem in m_elem.find( 'credentials' ):
-                    print f_elem
                     field = {}
                     
                     field['name'] = f_elem.find( 'name' ).text
@@ -213,7 +191,8 @@ class APIRequest( object ):
     class RequestFailed( Exception ):
         '''
             Indicates that the Request failed.
-            Any returned xml data will be stored in the xml attribute and any error messages passed back will be stored in the errors attribute
+            Any returned xml data will be stored in the xml attribute and any
+            error messages passed back will be stored in the errors attribute
         '''
         def __init__( self, data ):
             self.xml = ElementTree.fromstring( data )
@@ -243,10 +222,6 @@ class APIRequest( object ):
                         e[k] = v
                     
                     self.errors.append( e )
-            else:
-                print 'Unknown ERROR'
-                print data
-                import pdb; pdb.set_trace()
     
     def __init__( self, api, url, method = 'GET', data = None ):
         self.api = api
@@ -363,12 +338,17 @@ class PaymentMethod( APIObject ):
     @classmethod
     def add( cls, api, credit_card ):
         '''
-            Creates a new Payment Method.
-            WARNING: Using this method to create payment methods should only be used if you are unable to use the standard method outlined in: https://spreedlycore.com/manual/quickstart
-                The standard method is safer because you do not have to touch the credit card data as it is sent straight to spreedly core via the form.
-            credit_card is a dictionary with credit card details with the following keys:
-                first_name, last_name, number, verification_value, month, year
-                Where number is the credit card number and month and year are for the expiration date. The year is expressed using 4 digits (ie 2012)
+        Creates a new Payment Method.
+        
+        WARNING: Using this method to create payment methods should only be used
+        if you are unable to use the standard method outlined in: https://spreedlycore.com/manual/quickstart
+        
+        The standard method is safer because you do not have to touch the credit
+        card data as it is sent straight to spreedly core via the form.
+        credit_card is a dictionary with credit card details with the following keys:
+        first_name, last_name, number, verification_value, month, year
+        Where number is the credit card number and month and year are for
+        the expiration date. The year is expressed using 4 digits (ie 2012)
         '''
         d = ElementTree.tostring( dict_to_xml( { 'credit_card': credit_card } )[0] )
        

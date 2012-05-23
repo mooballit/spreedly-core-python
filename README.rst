@@ -35,7 +35,7 @@ Raise a transaction using the gateway and payment method.
 
 Create a new gateway and payment method and retain the payment method for later.
 
->>> pg = PaymentGateway.add( 'test' )
+>>> pg = PaymentGateway.add( api, 'test' )
 >>> pm = PaymentMethod.add( api, { 'first_name': 'Test', 'last_name': 'Testington', 'number': '5555555555554444', 'verification_value': '666', 'month': '12', 'year': '2012' } )
 >>> pm.retain()
 

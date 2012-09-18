@@ -272,8 +272,8 @@ class APIRequest( object ):
         else:
             o = cls.__new__( cls )
         
-        o.from_dict( d )
         o.api = self.api
+        o.from_dict( d )
         return o
         
 
@@ -331,7 +331,7 @@ class PaymentGateway( APIObject ):
             pm is a payment method object
         '''
         
-        return Purchase.add( self.api, self, pm, amount, currency )
+        return Transaction.add( self.api, self, pm, amount, currency )
     
 
 class PaymentMethod( APIObject ):
@@ -521,5 +521,4 @@ class Transaction( APIObject ):
         if 'payment_method' in data:
             self.payment_method = PaymentMethod.__new__( PaymentMethod )
             self.payment_method.api = self.api
-            self.payment_method.from_dict( data.pop( 'payment_method' ) )
         super( Transaction, self ).from_dict( data )

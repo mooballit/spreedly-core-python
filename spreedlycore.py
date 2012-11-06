@@ -3,67 +3,8 @@
 
 import urllib2, urlparse, datetime, base64
 from xml.etree import ElementTree
+from xmlutils import xml_to_dict, dict_to_xml
 
-convs = {
-    'datetime': lambda dt: datetime.datetime.strptime( dt, '%Y-%m-%dT%H:%M:%SZ' ),
-    'integer': int,
-    'boolean': lambda v: v == 'true',
-}
-
-def xml_to_dict( xml, handlers = None ):
-    '''
-    Converts an etree xml structure to a python dictionary
-    handlers is used to specify functions to handle specific xml tags.
-    The keys in the handlers dictionary map to xml tag names and the
-    values should be functions that takes the xml element and returns a
-    string that will be used as the value in the resulting dictionary.
-    '''
-    handlers = handlers or {}
-    
-    ret = {}
-
-    for elem in xml:
-        if elem.tag in handlers:
-            key, val = handlers[ elem.tag ]( elem )
-        else:
-            key = elem.tag
-            if elem.get( 'nil', False ):
-                val = None
-            elif elem.get( 'type', None ):
-                type = elem.get( 'type' )
-                val = convs[ type ]( elem.text )
-            else:
-                val = elem.text
-
-        ret[ key ] = val
-    
-    return ret
-
-def dict_to_xml( d, handlers = None ):
-    '''
-        Converts a python dictionary to etree xml structures
-        handlers is used to specify functions to handle specific dictionary keys.
-        The keys in the handlers dictionary map to keys in the dictionary
-        that is being converted. The values of the handlers dictionary
-        should be function that take the xml element and the value of the key value pair
-        and returns an etree xml element (ie. the same one that was passed to the function)
-        
-    '''
-    handlers = handlers or {}
-
-    ret = []
-    for k,v in d.items():
-        elem = ElementTree.Element( k )
-        if isinstance( v, dict ):
-            elem.extend( dict_to_xml( d[ k ] ) )
-        elif k in handlers:
-            elem = handlers[ k ]( elem, v )
-        else:
-            elem.text = str( v )
-            
-        ret.append( elem )
-
-    return ret
 
 class APIConnection( object ):
     def __init__( self, login, secret, base_url = None ):
@@ -259,13 +200,13 @@ class APIRequest( object ):
         ''' Does the API Request and returns data as an eTree '''
         return ElementTree.fromstring( self.do() )
     
-    def to_object( self, cls, handlers = None, target = None ):
+    def to_object( self, cls, target = None ):
         '''
             Stores the returned data against an API Object.
             If target is supplied the data will be stored on the supplied object instead of a new one.
             The handlers parameter will be passed on to the xml_to_dict function.
         '''
-        d = xml_to_dict( self.xml(), handlers )
+        d = xml_to_dict( self.xml())
         
         if target:
             o = target
@@ -315,7 +256,7 @@ class PaymentGateway( APIObject ):
         data = { 'gateway': { 'gateway_type': type } }
         data['gateway'].update( params )
 
-        data = ElementTree.tostring( dict_to_xml( data )[0] )
+        data = dict_to_xml( data )
         
         ret = APIRequest( api, 'gateways.xml', data = data ).to_object( PaymentGateway )
         return ret
@@ -350,7 +291,7 @@ class PaymentMethod( APIObject ):
         Where number is the credit card number and month and year are for
         the expiration date. The year is expressed using 4 digits (ie 2012)
         '''
-        d = ElementTree.tostring( dict_to_xml( { 'credit_card': credit_card } )[0] )
+        d = dict_to_xml( { 'credit_card': credit_card } )
        
         req = APIRequest( api, 'payment_methods.xml', 'POST', data = d )
 
@@ -388,7 +329,7 @@ class PaymentMethod( APIObject ):
             This will update any non-sensitive attributes.
             Attempting to change things such as the card number will cause an error.
         '''
-        data = ElementTree.tostring( dict_to_xml( { 'payment_method': params } )[0] )
+        data = dict_to_xml( { 'payment_method': params } )
         
         APIRequest( self.api, 'payment_methods/%s.xml' % self.token, 'PUT', data ).to_object( PaymentMethod, target = self )
 
@@ -417,6 +358,10 @@ class PaymentMethod( APIObject ):
 
         return []
 
+    def from_dict( self, data ):
+            if 'payment_method' in data:
+                data = data.pop( 'payment_method' )
+            super( PaymentMethod, self ).from_dict( data )
         
 class Transaction( APIObject ):
     @classmethod
@@ -440,8 +385,8 @@ class Transaction( APIObject ):
         if ip:
             data['transaction']['ip'] = ip
         
-        data = ElementTree.tostring( dict_to_xml( data )[0] )
-        
+        data = dict_to_xml( data )
+
         return APIRequest( api, 'gateways/%s/purchase.xml' % pg.token, 'POST', data ).to_object( Transaction )
 
     @classmethod
@@ -462,7 +407,7 @@ class Transaction( APIObject ):
         if ip:
             data['transaction']['ip'] = ip
 
-        data = ElementTree.tostring( dict_to_xml( data )[0] )
+        data = dict_to_xml( data )
         
         return APIRequest( api, 'gateways/%s/authorize.xml' % pg.token, 'POST', data ).to_object( Transaction )
     
@@ -478,7 +423,7 @@ class Transaction( APIObject ):
                 data['transaction']['order_id'] = order_id
             if ip:
                 data['transaction']['ip'] = ip
-            data = ElementTree.tostring( dict_to_xml( data )[0] )
+            data = dict_to_xml( data )
         else:
             data = ''
 
@@ -494,7 +439,7 @@ class Transaction( APIObject ):
                 data['transaction']['order_id'] = order_id
             if ip:
                 data['transaction']['ip'] = ip
-            data = ElementTree.tostring( dict_to_xml( data )[0] )
+            data = dict_to_xml( data )
         else:
             data = ''
         return APIRequest( self.api, 'transactions/%s/void.xml' % self.token, 'POST', '' ).to_object( Transaction, target = self )
@@ -511,14 +456,16 @@ class Transaction( APIObject ):
                 data['transaction']['order_id'] = order_id
             if ip:
                 data['transaction']['ip'] = ip
-            data = ElementTree.tostring( dict_to_xml( data )[0] )
+            data = dict_to_xml( data )
         else:
             data = ''
 
         return APIRequest( self.api, 'transactions/%s/credit.xml' % self.token, 'POST', '' ).to_object( Transaction, target = self )
         
     def from_dict( self, data ):
+        data = data.pop( 'transaction' )
         if 'payment_method' in data:
             self.payment_method = PaymentMethod.__new__( PaymentMethod )
             self.payment_method.api = self.api
+            self.payment_method.from_dict( data.pop( 'payment_method' ) )
         super( Transaction, self ).from_dict( data )

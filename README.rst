@@ -17,6 +17,11 @@ Requirements
 * Active Spreedly Core Account (https://spreedlycore.com)
 * Python >= 2.6
 
+Contributions
+-------------
+
+* moesian (https://github.com/moesian)
+
 Usage Examples
 --------------
 

@@ -17,6 +17,14 @@ Requirements
 * Active Spreedly Core Account (https://spreedlycore.com)
 * Python >= 2.6
 
+Changes
+------------
+Version 0.3
+* Added from_dict method to PaymentGateway to pop 'gateway' tag, now resembles old functionality. Variable 'xml' in RequestFailed uses Dictionary Tree instead of ElementTree, added 'errors_field' for easy access of 'errors' in 'payment_method'.
+
+Version 0.2
+* Data Variable in APIObject now uses moesian's custom Dictionary Tree instead of ElementTree. Fixes bug involving the 'errors' field within 'payment_method', where ElementTree would not recurse far enough. Thanks moesian!
+
 Contributions
 -------------
 

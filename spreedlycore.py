@@ -136,33 +136,21 @@ class APIRequest( object ):
             error messages passed back will be stored in the errors attribute
         '''
         def __init__( self, data ):
-            self.xml = ElementTree.fromstring( data )
+            self.xml = xml_to_dict( data )
             
             self.errors = []
-            if self.xml.tag == 'errors':
-                for elem in self.xml:
-                    e = {}
-                    e['text'] = elem.text
-                    for k,v in elem.items():
-                        e[k] = v
-                    
-                    self.errors.append( e )
-            elif self.xml.tag == 'transaction':
-                elem = self.xml.find( 'message' )
-                e = {}
-                e['text'] = elem.text
-                for k,v in elem.items():
-                    e[k] = v
-                
-                self.errors.append( e )
-            elif self.xml.find( 'errors', None ):
-                for elem in self.xml.find( 'errors' ):
-                    e = {}
-                    e['text'] = elem.text
-                    for k,v in elem.items():
-                        e[k] = v
-                    
-                    self.errors.append( e )
+            self.field_errors = []
+            if self.xml.has_key( 'errors' ):
+                for attribute in self.xml['error']:
+                    self.field_errors.append(attribute)
+            elif self.xml.has_key( 'transaction' ):
+                for attribute in self.xml['transaction']['payment_method']['errors']['error']:
+                    self.field_errors.append(attribute)
+                self.errors.append(self.xml['transaction']['message'])
+            elif self.xml.has_key( 'payment_method' ):
+                for elem in self.xml['payment_method']['errors']['error']:
+                    self.field_errors.append(attribute)
+                self.errors.append(self.xml['message'])
     
     def __init__( self, api, url, method = 'GET', data = None ):
         self.api = api

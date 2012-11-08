@@ -274,6 +274,10 @@ class PaymentGateway( APIObject ):
         
         return Transaction.add( self.api, self, pm, amount, currency )
     
+    def from_dict( self, data ):
+            if 'gateway' in data:
+                data = data.pop( 'gateway' )
+            super( PaymentGateway, self ).from_dict( data )
 
 class PaymentMethod( APIObject ):
     @classmethod

@@ -124,8 +124,24 @@ class APIConnection( object ):
             gws.append( gw )
         
         return gws
-        
-        
+
+
+def searchDict(aDict, searchkey):
+    '''
+        Return the first found key within the given dictionary
+
+        >>> searchDict({}, 'foo')
+        []
+    '''
+    for k in aDict.keys():
+        if k == searchkey:
+            return aDict[k] is not None and aDict[k] or None
+        elif type(aDict[k]) != dict:
+            pass
+        else:
+            key_contents = searchDict( aDict[k], searchkey )
+            if key_contents:
+                return key_contents
 
 
 class APIRequest( object ):
@@ -140,8 +156,8 @@ class APIRequest( object ):
             self.field_errors = []
             self.xml = xml_to_dict( data )
             
-            dict_errors = self.searchDict(self.xml, 'errors')
-            dict_message = self.searchDict(self.xml, 'message')
+            dict_errors = searchDict(self.xml, 'errors')
+            dict_message = searchDict(self.xml, 'message')
             if isinstance(dict_errors, dict):
                 if dict_errors.has_key('error'):
                     self.field_errors = dict_errors['error']
@@ -149,20 +165,6 @@ class APIRequest( object ):
             if isinstance(dict_message, dict):
                 self.errors.append(dict_message)
         
-        def searchDict(self, aDict, searchkey):
-            '''
-                Return the first found key within the given dictionary
-            '''
-            for k in aDict.keys():
-                if k == searchkey:
-                    return aDict[k] is not None and aDict[k] or None
-                elif type(aDict[k]) != dict:
-                    pass
-                else:
-                    key_contents = self.searchDict( aDict[k], searchkey )
-                    if key_contents:
-                        return key_contents
-    
     def __init__( self, api, url, method = 'GET', data = None ):
         self.api = api
         self.url = url

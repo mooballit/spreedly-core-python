@@ -136,21 +136,32 @@ class APIRequest( object ):
             error messages passed back will be stored in the errors attribute
         '''
         def __init__( self, data ):
-            self.xml = xml_to_dict( data )
-            
             self.errors = []
             self.field_errors = []
-            if self.xml.has_key( 'errors' ):
-                for attribute in self.xml['error']:
-                    self.field_errors.append(attribute)
-            elif self.xml.has_key( 'transaction' ):
-                for attribute in self.xml['transaction']['payment_method']['errors']['error']:
-                    self.field_errors.append(attribute)
-                self.errors.append(self.xml['transaction']['message'])
-            elif self.xml.has_key( 'payment_method' ):
-                for elem in self.xml['payment_method']['errors']['error']:
-                    self.field_errors.append(attribute)
-                self.errors.append(self.xml['message'])
+            self.xml = xml_to_dict( data )
+            
+            dict_errors = self.searchDict(self.xml, 'errors')
+            dict_message = self.searchDict(self.xml, 'message')
+            if isinstance(dict_errors, dict):
+                if dict_errors.has_key('error'):
+                    self.field_errors = dict_errors['error']
+            
+            if isinstance(dict_message, dict):
+                self.errors.append(dict_message)
+        
+        def searchDict(self, aDict, searchkey):
+            '''
+                Return the first found key within the given dictionary
+            '''
+            for k in aDict.keys():
+                if k == searchkey:
+                    return aDict[k] is not None and aDict[k] or None
+                elif type(aDict[k]) != dict:
+                    pass
+                else:
+                    key_contents = self.searchDict( aDict[k], searchkey )
+                    if key_contents:
+                        return key_contents
     
     def __init__( self, api, url, method = 'GET', data = None ):
         self.api = api

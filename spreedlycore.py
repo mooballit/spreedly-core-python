@@ -126,22 +126,35 @@ class APIConnection( object ):
         return gws
 
 
-def searchDict(aDict, searchkey):
+def search_dict(dictionary, searchkey):
     '''
         Return the first found key within the given dictionary
-
-        >>> searchDict({}, 'foo')
+        >>> search_dict({'transaction': {'gateway_token': '', 'description': None, 'succeeded': False, 'state': 'failed', 'order_id': None, 'ip': None, 'created_at': datetime.datetime(2012, 11, 9, 2, 7, 4), 'updated_at': datetime.datetime(2012, 11, 9, 2, 7, 4), 'transaction_type': 'Purchase', 'payment_method': {'last_name': 'Smith', 'updated_at': datetime.datetime(2012, 11, 9, 2, 7), 'month': 0, 'last_four_digits': None, 'year': 0, 'city': '', 'first_name': 'John', 'errors': {'error': [{'attribute': 'month', 'key': 'errors.invalid', 'text': 'Month is invalid'}, {'attribute': 'year', 'key': 'errors.expired', 'text': 'Year is expired'}, {'attribute': 'year', 'key': 'errors.invalid', 'text': 'Year is invalid'}, {'attribute': 'number', 'key': 'errors.blank', 'text': "Number can't be blank"}]}, 'zip': '', 'state': None, 'email': '', 'phone_number': '', 'verification_value': None, 'address1': '', 'address2': None, 'number': None, 'data': None, 'payment_method_type': 'credit_card', 'country': '', 'created_at': datetime.datetime(2012, 11, 9, 2, 7), 'card_type': None, 'token': ''}, 'amount': 35, 'token': '', 'on_test_gateway': True, 'message': {'text': 'The payment method is invalid.', 'key': 'messages.payment_method_invalid'}, 'currency_code': 'AUD'}}, 'error')
+        [{'attribute': 'month', 'key': 'errors.invalid', 'text': 'Month is invalid'}, {'attribute': 'year', 'key': 'errors.expired', 'text': 'Year is expired'}, {'attribute': 'year', 'key': 'errors.invalid', 'text': 'Year is invalid'}, {'attribute': 'number', 'key': 'errors.blank', 'text': "Number can't be blank"}]
+        >>> search_dict({'transaction': {'gateway_token': '', 'description': None, 'succeeded': False, 'state': 'gateway_processing_failed', 'order_id': None, 'ip': None, 'created_at': datetime.datetime(2012, 11, 9, 2, 13, 25), 'updated_at': datetime.datetime(2012, 11, 9, 2, 13, 25), 'transaction_type': 'Purchase', 'payment_method': {'last_name': 'Smith', 'updated_at': datetime.datetime(2012, 11, 9, 2, 13, 21), 'month': 1, 'last_four_digits': '1881', 'year': 2015, 'city': '', 'first_name': 'John', 'errors': '', 'zip': '', 'state': None, 'email': '', 'phone_number': '', 'verification_value': 'XXX', 'address1': '', 'address2': None, 'number': 'XXXX-XXXX-XXXX-1881', 'data': None, 'payment_method_type': 'credit_card', 'country': '', 'created_at': datetime.datetime(2012, 11, 9, 2, 13, 21), 'card_type': 'visa', 'token': ''}, 'amount': 35, 'token': '', 'response': {'avs_code': None, 'cvv_message': None, 'error_detail': None, 'avs_message': None, 'success': False, 'created_at': datetime.datetime(2012, 11, 9, 2, 13, 25), 'updated_at': datetime.datetime(2012, 11, 9, 2, 13, 25), 'cvv_code': None, 'message': {'text': 'Unable to process the transaction.'}, 'error_code': None}, 'on_test_gateway': True, 'message': {'text': 'Unable to process the transaction.'}, 'currency_code': 'AUD'}}, 'message')
+        [{'text': 'Unable to process the transaction.'}]
+        >>> search_dict({'transaction': {'gateway_token': '', 'description': None, 'succeeded': False, 'state': 'gateway_processing_failed', 'order_id': None, 'ip': None, 'created_at': datetime.datetime(2012, 11, 9, 2, 13, 25), 'updated_at': datetime.datetime(2012, 11, 9, 2, 13, 25), 'transaction_type': 'Purchase', 'payment_method': {'last_name': 'Smith', 'updated_at': datetime.datetime(2012, 11, 9, 2, 13, 21), 'month': 1, 'last_four_digits': '1881', 'year': 2015, 'city': '', 'first_name': 'John', 'errors': '', 'zip': '', 'state': None, 'email': '', 'phone_number': '', 'verification_value': 'XXX', 'address1': '', 'address2': None, 'number': 'XXXX-XXXX-XXXX-1881', 'data': None, 'payment_method_type': 'credit_card', 'country': '', 'created_at': datetime.datetime(2012, 11, 9, 2, 13, 21), 'card_type': 'visa', 'token': ''}, 'amount': 35, 'token': '', 'response': {'avs_code': None, 'cvv_message': None, 'error_detail': None, 'avs_message': None, 'success': False, 'created_at': datetime.datetime(2012, 11, 9, 2, 13, 25), 'updated_at': datetime.datetime(2012, 11, 9, 2, 13, 25), 'cvv_code': None, 'message': {'text': 'Unable to process the transaction.'}, 'error_code': None}, 'on_test_gateway': True, 'message': {'text': 'Unable to process the transaction.'}, 'currency_code': 'AUD'}}, 'errors')
+        ['']
+        >>> search_dict({}, 'foo')
         []
     '''
-    for k in aDict.keys():
+    key_contents = []
+    for k in dictionary.keys():
         if k == searchkey:
-            return aDict[k] is not None and aDict[k] or None
-        elif type(aDict[k]) != dict:
+            found_value = []
+            if isinstance( dictionary[k], list ):
+                found_value = dictionary[k]
+            else:
+                found_value.append( dictionary[k] )
+            
+            return found_value
+        elif not isinstance( dictionary[k], dict ):
             pass
         else:
-            key_contents = searchDict( aDict[k], searchkey )
+            key_contents = search_dict( dictionary[k], searchkey )
             if key_contents:
                 return key_contents
+    return key_contents
 
 
 class APIRequest( object ):
@@ -152,18 +165,10 @@ class APIRequest( object ):
             error messages passed back will be stored in the errors attribute
         '''
         def __init__( self, data ):
-            self.errors = []
-            self.field_errors = []
             self.xml = xml_to_dict( data )
             
-            dict_errors = searchDict(self.xml, 'errors')
-            dict_message = searchDict(self.xml, 'message')
-            if isinstance(dict_errors, dict):
-                if dict_errors.has_key('error'):
-                    self.field_errors = dict_errors['error']
-            
-            if isinstance(dict_message, dict):
-                self.errors.append(dict_message)
+            self.errors = search_dict( self.xml, 'message' )
+            self.field_errors = search_dict( self.xml, 'error' )
         
     def __init__( self, api, url, method = 'GET', data = None ):
         self.api = api

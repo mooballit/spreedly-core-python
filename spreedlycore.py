@@ -264,7 +264,7 @@ class PaymentGateway( APIObject ):
 
         data = dict_to_xml( data )
         
-        ret = APIRequest( api, 'gateways.xml', data = data ).to_object( PaymentGateway )
+        ret = APIRequest( api, 'gateways.xml', 'POST', data = data ).to_object( PaymentGateway )
         return ret
     
     def load( self ):

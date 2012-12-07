@@ -272,13 +272,13 @@ class PaymentGateway( APIObject ):
 
         return self
     
-    def transaction( self, pm, amount, currency ):
+    def transaction( self, pm, amount, currency, description = None ):
         '''
             Shortcut method to do a transaction using this gateway
             pm is a payment method object
         '''
         
-        return Transaction.add( self.api, self, pm, amount, currency )
+        return Transaction.add( self.api, self, pm, amount, currency, description = description )
     
     def from_dict( self, data ):
             if 'gateway' in data:
@@ -375,7 +375,7 @@ class PaymentMethod( APIObject ):
         
 class Transaction( APIObject ):
     @classmethod
-    def add( cls, api, pg, pm, amount, currency, order_id = None, ip = None ):
+    def add( cls, api, pg, pm, amount, currency, order_id = None, ip = None, description = None ):
         '''
             Creates a new transaction
             pg is the payment gateway to use
@@ -394,13 +394,15 @@ class Transaction( APIObject ):
             data['transaction']['order_id'] = order_id
         if ip:
             data['transaction']['ip'] = ip
-        
+        if description:
+            data['transaction']['description'] = description
+
         data = dict_to_xml( data )
 
         return APIRequest( api, 'gateways/%s/purchase.xml' % pg.token, 'POST', data ).to_object( Transaction )
 
     @classmethod
-    def authorize( cls, api, pg, pm, amount, currency, order_id = None, ip = None ):
+    def authorize( cls, api, pg, pm, amount, currency, order_id = None, ip = None, description = None ):
         '''
             Works just like the add method except no funds are actually transfered.
             Use capture method to make the actual transfer or void method to cancel it.
@@ -416,16 +418,18 @@ class Transaction( APIObject ):
             data['transaction']['order_id'] = order_id
         if ip:
             data['transaction']['ip'] = ip
+        if description:
+            data['transaction']['description'] = description
 
         data = dict_to_xml( data )
         
         return APIRequest( api, 'gateways/%s/authorize.xml' % pg.token, 'POST', data ).to_object( Transaction )
     
-    def capture( self, amount = None, order_id = None, ip = None ):
+    def capture( self, amount = None, order_id = None, ip = None, description = None ):
         '''
             Does the actual transfer for a Transaction created with authorize
         '''
-        if amount or order_id or ip:
+        if amount or order_id or ip or description:
             data = { 'transaction': { } }
             if amount:
                 data['transaction']['amount'] = amount
@@ -433,32 +437,36 @@ class Transaction( APIObject ):
                 data['transaction']['order_id'] = order_id
             if ip:
                 data['transaction']['ip'] = ip
+            if description:
+                data['transaction']['description'] = description
             data = dict_to_xml( data )
         else:
             data = ''
 
         return APIRequest( self.api, 'transactions/%s/capture.xml' % self.token, 'POST', data ).to_object( Transaction, target = self )
     
-    def void( self, order_id = None, ip = None ):
+    def void( self, order_id = None, ip = None, description = None ):
         '''
             Cancels a Transaction created with authorize
         '''
-        if order_id or ip:
+        if order_id or ip or description:
             data = { 'transaction': { } }
             if order_id:
                 data['transaction']['order_id'] = order_id
             if ip:
                 data['transaction']['ip'] = ip
+            if description:
+                data['transaction']['description'] = description
             data = dict_to_xml( data )
         else:
             data = ''
         return APIRequest( self.api, 'transactions/%s/void.xml' % self.token, 'POST', '' ).to_object( Transaction, target = self )
     
-    def credit( self, amount = None, order_id = None, ip = None ):
+    def credit( self, amount = None, order_id = None, ip = None, description = None ):
         '''
             Cancels or refunds any Transaction created in the past.
         '''
-        if amount or order_id or ip:
+        if amount or order_id or ip or description:
             data = { 'transaction': { } }
             if amount:
                 data['transaction']['amount'] = amount
@@ -466,6 +474,8 @@ class Transaction( APIObject ):
                 data['transaction']['order_id'] = order_id
             if ip:
                 data['transaction']['ip'] = ip
+            if description:
+                data['transaction']['description'] = description
             data = dict_to_xml( data )
         else:
             data = ''

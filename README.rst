@@ -19,6 +19,11 @@ Requirements
 
 Changes
 ------------
+Version 0.4
+
+* Removed Transaction.add() method and added explicit Transaction.purchase() for Purchase transaction types.
+* PaymentGateway.transaction() will work as before and execute a Purchase transaction by default but has an optional parameter, transaction_type, to still use this wrapper method for an authorize (and subsequent capture) will need to pass transaction_type = 'authorize'.
+
 Version 0.3
 
 * Added from_dict method to PaymentGateway to pop 'gateway' tag, now resembles old functionality. Variable 'xml' in RequestFailed uses Dictionary Tree instead of ElementTree, added 'errors_field' for easy access of 'errors' in 'payment_method'.
@@ -44,9 +49,13 @@ Get the first payment gateway and payment method
 >>> pg = api.gateways()[0]
 >>> pm = api.methods()[0]
 
-Raise a transaction using the gateway and payment method.
+Perform a Purchase transaction using the gateway and payment method.
 
->>> pg.transaction( pm, 100, 'USD' )
+>>> pg.transaction( pm, 100, 'USD')
+
+Or
+
+>>> t = Transaction.purchase(api, pg, pm, 100, 'USD')
 
 Create a new gateway and payment method and retain the payment method for later.
 
@@ -55,6 +64,11 @@ Create a new gateway and payment method and retain the payment method for later.
 >>> pm.retain()
 
 Do another transaction via authorize (allocate funds but dont do transaction) and capture (do the transaction) using the new details.
+
+>>> t = pg.transaction(pm, 1000, 'AUD', transaction_type = 'authorize')
+>>> t.capture()
+
+Or
 
 >>> t = Transaction.authorize( api, pg, pm, 1000, 'AUD' )
 >>> t.capture()

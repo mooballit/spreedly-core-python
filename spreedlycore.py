@@ -194,17 +194,18 @@ class APIRequest( object ):
         try:
             con = urllib2.urlopen( req )
 
-            return con.read()
+            return {'error' : False, 'data': con.read()}
         except urllib2.HTTPError, e:
             if e.code == 422:
                 # Assume request failed but data should be returned anyway
-                raise APIRequest.RequestFailed( e.fp.read() )
+                return {'error' : True, 'data': e.fp.read()}
 
             raise
 
     def xml( self ):
         ''' Does the API Request and returns data as an eTree '''
-        return ElementTree.fromstring( self.do() )
+        result = self.do()
+        return {'error': result['error'], 'et':ElementTree.fromstring( result['data'] ) }
 
     def to_object( self, cls, target = None ):
         '''
@@ -212,7 +213,10 @@ class APIRequest( object ):
             If target is supplied the data will be stored on the supplied object instead of a new one.
             The handlers parameter will be passed on to the xml_to_dict function.
         '''
-        d = xml_to_dict( self.xml())
+        result = self.xml()
+        d = xml_to_dict(result['et'])
+        if result['error']:
+            return {'error':True, 'dict':d}
 
         if target:
             o = target

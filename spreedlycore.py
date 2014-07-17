@@ -205,7 +205,10 @@ class APIRequest( object ):
     def xml( self ):
         ''' Does the API Request and returns data as an eTree '''
         result = self.do()
-        return {'error': result['error'], 'et':ElementTree.fromstring( result['data'] ) }
+        if result['error']:
+            return {'error': result['error'], 'et':ElementTree.fromstring( result['data'] ) }
+        else:
+            return ElementTree.fromstring( result['data'] )
 
     def to_object( self, cls, target = None ):
         '''
@@ -214,18 +217,19 @@ class APIRequest( object ):
             The handlers parameter will be passed on to the xml_to_dict function.
         '''
         result = self.xml()
-        d = xml_to_dict(result['et'])
-        if result['error']:
+        if isinstance(result, dict) and 'error' in result:
+            d = xml_to_dict(result['et'])
             return {'error':True, 'dict':d}
-
-        if target:
-            o = target
         else:
-            o = cls.__new__( cls )
+            d = xml_to_dict(result)
+            if target:
+                o = target
+            else:
+                o = cls.__new__( cls )
 
-        o.api = self.api
-        o.from_dict( d )
-        return o
+            o.api = self.api
+            o.from_dict( d )
+            return o
 
 
 class APIObject( object ):
